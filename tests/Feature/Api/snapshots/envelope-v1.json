@@ -1,0 +1,66 @@
+{
+    "id": "01J000000000000000000001",
+    "schema_version": 1,
+    "logged_at": "2026-09-08T12:00:01.123456Z",
+    "channel": "http",
+    "action": "http.request",
+    "severity": "info",
+    "title": "GET /orders answered with 200",
+    "summary": null,
+    "actor": {
+        "type": "user",
+        "id": "8821",
+        "label": "Sara Bakker",
+        "url": "/users/8821"
+    },
+    "subject": {
+        "type": "order",
+        "id": "77213",
+        "label": "Order 77213",
+        "class": "App\\Models\\Order",
+        "url": "/orders/77213"
+    },
+    "trace": {
+        "trace_id": "cccccccccccccccccccccccccccccccc",
+        "correlation_id": "01J000000000000000009000",
+        "causation_id": null,
+        "parent_span_id": null
+    },
+    "tags": [
+        "shop",
+        "gdpr"
+    ],
+    "request": {
+        "method": "GET",
+        "url": "/orders",
+        "route": "orders.index",
+        "status_code": 200,
+        "duration_ms": 42,
+        "ip": "10.0.0.1",
+        "user_agent": "phpunit"
+    },
+    "changes": [
+        {
+            "path": "status",
+            "label": "Status",
+            "before": "draft",
+            "after": "approved"
+        }
+    ],
+    "payload": {
+        "changes": {
+            "status": {
+                "old": "draft",
+                "new": "approved"
+            }
+        },
+        "note": "snapshot"
+    },
+    "sealed": [],
+    "payload_bytes": 128,
+    "environment": "testing",
+    "hostname": "testbench",
+    "memory_kb": 1024,
+    "integrity_hash": null,
+    "created_at": "2026-09-08T12:00:01.123456Z"
+}

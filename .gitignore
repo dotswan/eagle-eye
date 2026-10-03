@@ -1,0 +1,27 @@
+/vendor/
+/composer.lock
+
+# Tool caches
+/.deptrac.cache
+/.phpstan.cache/
+/.phpunit.cache/
+/.phpunit.result.cache
+/.rector.cache/
+/.php-cs-fixer.cache
+/.pest/
+
+# Build and coverage output
+/build/
+/coverage/
+
+# Runtime spool and log files must never be committed
+/storage/
+*.spool
+*.spool.*
+
+# Local environment and editors
+.env
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db

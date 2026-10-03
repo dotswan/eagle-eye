@@ -1,0 +1,227 @@
+deptrac:
+  paths:
+    - ./src
+  layers:
+    - name: HttpResponse
+      collectors:
+        - type: classLike
+          value: ^Symfony\\Component\\HttpFoundation\\Response$
+    - name: SymfonyPayload
+      collectors:
+        - type: classLike
+          value: ^Symfony\\Component\\(Mime|Console|Mailer)\\.*
+    - name: Framework
+      collectors:
+        - type: classLike
+          value: Illuminate\\.*|PHPUnit\\Framework\\.*|Psr\\Http\\.*|GuzzleHttp\\.*|Guzzle\\.*
+    - name: PublicApi
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\(Attributes|Contracts|Data|Enums|Exceptions)\\.*|Dotswan\\EagleEye\\Repository\\ActivityTrail
+    - name: Metadata
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Metadata\\.*
+    - name: Resolution
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Resolution\\.*
+    - name: Title
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Title\\.*
+    - name: Security
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Security\\.*
+    - name: Integrity
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Integrity\\.*
+    - name: Privacy
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\(Privacy|Retention)\\.*
+    - name: Drivers
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Drivers\\.*
+    - name: Repository
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Repository\\ActivityRepository
+    - name: Correlation
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Correlation\\.*
+    - name: Capture
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Capture\\.*
+    - name: Filter
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Filter\\.*
+    - name: Pipeline
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Pipeline\\.*
+    - name: Redaction
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Redaction\\.*
+    - name: Sampling
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Sampling\\.*
+    - name: Tagging
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Tagging\\.*
+    - name: Transport
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Transport\\.*
+    - name: Console
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Console\\.*
+    - name: Http
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Http\\.*
+    - name: Core
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\(EagleEye|EagleEyeServiceProvider|Recorder|Facades\\.*)
+    - name: Testing
+      collectors:
+        - type: classLike
+          value: Dotswan\\EagleEye\\Testing\\.*
+  ruleset:
+    HttpResponse: []
+    Framework: []
+    PublicApi:
+      - Framework
+    Metadata:
+      - PublicApi
+      - Framework
+    Resolution:
+      - PublicApi
+      - Metadata
+      - Framework
+    Title:
+      - PublicApi
+      - Framework
+    Security:
+      - PublicApi
+      - Framework
+    Integrity:
+      - PublicApi
+      - Framework
+    Privacy:
+      - PublicApi
+      - Framework
+    Drivers:
+      - Transport
+      - Capture
+      - PublicApi
+      - Framework
+    Repository:
+      - Capture
+      - PublicApi
+      - Framework
+    Correlation:
+      - PublicApi
+      - Framework
+    Capture:
+      - Filter
+      - HttpResponse
+      - SymfonyPayload
+      - PublicApi
+      - Correlation
+      - Resolution
+      - Redaction
+      - Framework
+    Http:
+      - Correlation
+      - HttpResponse
+      - PublicApi
+      - Capture
+      - Repository
+      - Framework
+    Filter:
+      - PublicApi
+      - Framework
+    Pipeline:
+      - PublicApi
+      - Correlation
+      - Redaction
+      - Sampling
+      - Tagging
+      - Title
+      - Metadata
+      - Resolution
+      - Security
+      - Integrity
+      - Filter
+      - Framework
+    Redaction:
+      - Resolution
+      - PublicApi
+      - Metadata
+      - Security
+      - Framework
+    Sampling:
+      - PublicApi
+      - Filter
+      - Framework
+    Tagging:
+      - PublicApi
+      - Metadata
+      - Framework
+    Transport:
+      - Capture
+      - PublicApi
+      - Framework
+    Console:
+      - PublicApi
+      - Transport
+      - Drivers
+      - Integrity
+      - Privacy
+      - Metadata
+      - Pipeline
+      - Framework
+    Core:
+      - PublicApi
+      - Correlation
+      - Metadata
+      - Resolution
+      - Title
+      - Security
+      - Integrity
+      - Privacy
+      - Drivers
+      - Repository
+      - Capture
+      - Http
+      - Filter
+      - Pipeline
+      - Redaction
+      - Sampling
+      - Tagging
+      - Transport
+      - Console
+      - Testing
+      - Framework
+    Testing:
+      - PublicApi
+      - Metadata
+      - Resolution
+      - Title
+      - Security
+      - Drivers
+      - Repository
+      - Core
+      - Framework

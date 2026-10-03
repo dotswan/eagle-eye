@@ -1,0 +1,92 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "dotswan/eagle-eye",
+    "description": "Driver-agnostic activity and audit logging for Laravel with automatic capture, privacy redaction, trace correlation, and database or Grafana Loki storage.",
+    "keywords": [
+        "activity-log",
+        "audit",
+        "audit-log",
+        "dotswan",
+        "laravel",
+        "loki",
+        "observability"
+    ],
+    "homepage": "https://github.com/dotswan/eagle-eye",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Dotswan",
+            "email": "tech@dotswan.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/dotswan/eagle-eye/issues",
+        "source": "https://github.com/dotswan/eagle-eye"
+    },
+    "require": {
+        "php": "^8.4",
+        "ext-mbstring": "*",
+        "illuminate/contracts": "^11.0 || ^12.0",
+        "illuminate/http": "^11.0 || ^12.0",
+        "illuminate/pipeline": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.13",
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "deptrac/deptrac": "^4.0",
+        "rector/rector": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dotswan\\EagleEye\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Dotswan\\EagleEye\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Dotswan\\EagleEye\\EagleEyeServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "check": [
+            "@dependency-audit",
+            "@namespace-audit",
+            "@deptrac",
+            "@rector:dry",
+            "@lint",
+            "@analyse",
+            "@test"
+        ],
+        "lint": "pint --test",
+        "deptrac": "deptrac analyse --fail-on-uncovered",
+        "dependency-audit": "@php tools/dependency-audit.php",
+        "namespace-audit": "@php tools/namespace-audit.php",
+        "rector": "rector process",
+        "rector:dry": "rector process --dry-run",
+        "test": "pest"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
