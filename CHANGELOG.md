@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Laravel 13 support. The `illuminate/*` constraints now allow `^13.0`, and the CI matrix covers Laravel 12 and 13.
+
+### Removed
+
+- Laravel 11 support. The `illuminate/*` constraints, the dev dependencies and the CI matrix now require Laravel 12 or newer.
+
+### Fixed
+
+- Driver factories now read the container passed to them by `Illuminate\Support\Manager` instead of the service provider scope, so custom drivers resolve under Laravel 13 (which binds `Manager::extend()` callbacks to the manager).
+- Exceptions thrown from the Loki transfer `progress` and `on_headers` callbacks are unwrapped from the connection exception that Laravel 13's HTTP client raises, so the original `LokiWriteException` is reported.
+- Raw SQL built by the database drivers is declared as `literal-string` and series bucketing binds its step, matching Laravel 13's stricter query builder types.
+
 ## 1.0.0 - 2026-10-03
 
 Initial public release.

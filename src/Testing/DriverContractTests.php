@@ -177,9 +177,7 @@ final class DriverContractTests
             $driver = DriverContractTests::driver($factory);
             $driver->write(DriverContractTests::entry(1));
 
-            $this->expectException(InvalidArgumentException::class);
-
-            $driver->aggregate(new ActivityQuery(), 'nonsense');
+            expect(fn (): array => $driver->aggregate(new ActivityQuery(), 'nonsense'))->toThrow(InvalidArgumentException::class);
         });
 
         test("{$name} driver supports scoped maintenance", function () use ($factory): void {

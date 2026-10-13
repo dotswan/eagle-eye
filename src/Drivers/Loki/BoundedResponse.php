@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Dotswan\EagleEye\Drivers\Loki;
 
+use Closure;
+use Dotswan\EagleEye\Capture\CaptureSuppression;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use ReflectionProperty;
+use Throwable;
 
 /** @internal */
 final class BoundedResponse
@@ -14,6 +17,23 @@ final class BoundedResponse
     public const int MAX_BYTES = 2_097_152;
 
     private const string GUZZLE_HANDLER_NAMESPACE = 'GuzzleHttp\\Handler\\';
+
+    /**
+     * Runs an HTTP send with capture suppression, rethrowing the original
+     * Eagle Eye failure when the client wrapped it. Guzzle reports exceptions
+     * thrown from the `on_headers` and `progress` callbacks as generic
+     * transport errors, which Laravel surfaces as a connection failure.
+     *
+     * @param  Closure(): Response  $send
+     */
+    public static function send(Closure $send): Response
+    {
+        try {
+            return app(CaptureSuppression::class)->run($send);
+        } catch (Throwable $exception) {
+            throw self::originalFailure($exception) ?? $exception;
+        }
+    }
 
     public static function deadline(int $seconds): int
     {
@@ -166,5 +186,20 @@ final class BoundedResponse
         $limit = self::MAX_BYTES === $maximum ? '2 MiB' : sprintf('%d bytes', $maximum);
 
         return "Loki {$operation} response exceeds the {$limit} decode limit.";
+    }
+
+    private static function originalFailure(Throwable $exception): ?Throwable
+    {
+        $cause = $exception->getPrevious();
+
+        while ($cause instanceof Throwable) {
+            if ($cause instanceof LokiWriteException) {
+                return $cause;
+            }
+
+            $cause = $cause->getPrevious();
+        }
+
+        return null;
     }
 }

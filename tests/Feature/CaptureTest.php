@@ -382,7 +382,7 @@ it('never breaks the response when storage is down', function (): void {
     config()->set('eagle-eye.transport.spool.path', storage_path('eagle-eye/capture-'.uniqid().'/spool.log'));
 
     $manager = app(DriverManager::class);
-    $manager->extend('failing', static fn (): AlwaysFailingDriver => new AlwaysFailingDriver());
+    $manager->extend('failing', fn (): AlwaysFailingDriver => new AlwaysFailingDriver());
     $manager->forgetDrivers();
     config()->set('eagle-eye.default', 'failing');
 

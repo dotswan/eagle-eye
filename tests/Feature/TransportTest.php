@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Dotswan\EagleEye\Capture\CaptureSuppression;
 use Dotswan\EagleEye\Capture\QueryCapture;
+use PHPUnit\Framework\Assert;
 use Dotswan\EagleEye\Contracts\Repository\ActivityRepositoryInterface;
 use Dotswan\EagleEye\Data\Query\ActivityQuery;
 use Dotswan\EagleEye\Data\Query\Cursor;
@@ -59,7 +60,7 @@ use Mockery\MockInterface;
 function swapInDriver(string $name, ActivityLogDriverInterface $driver, int $buffer = 100): void
 {
     $manager = app(DriverManager::class);
-    $manager->extend($name, static fn (): ActivityLogDriverInterface => $driver);
+    $manager->extend($name, fn (): ActivityLogDriverInterface => $driver);
     $manager->forgetDrivers();
     config()->set('eagle-eye.default', $name);
     config()->set('eagle-eye.transport.buffer', $buffer);
@@ -207,7 +208,7 @@ it('rejects an oversized queued batch before serialization into a job', function
 
 it('reports a stream write failure instead of acknowledging delivery', function (): void {
     if (! is_writable('/dev/full')) {
-        $this->markTestSkipped('/dev/full is unavailable on this platform.');
+        Assert::markTestSkipped('/dev/full is unavailable on this platform.');
     }
 
     expect(fn () => (new StreamTransport('/dev/full'))->send([
@@ -447,7 +448,7 @@ it('keeps erasure blocked until a previously admitted remote delivery settles', 
 
 it('keeps killed remote delivery attempts durable across erasure and replay processes', function (): void {
     if (! function_exists('pcntl_fork') || ! function_exists('posix_kill')) {
-        $this->markTestSkipped('PCNTL and POSIX are required for the process-boundary regression.');
+        Assert::markTestSkipped('PCNTL and POSIX are required for the process-boundary regression.');
     }
 
     $database = tempnam(sys_get_temp_dir(), 'eagle-eye-erasure-');

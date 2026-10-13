@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dotswan\EagleEye\Drivers\Loki\Writers;
 
 use Illuminate\Http\Client\PendingRequest;
+use Dotswan\EagleEye\Drivers\Loki\BoundedResponse;
 use Dotswan\EagleEye\Data\EnvelopeBudget;
 use Dotswan\EagleEye\Drivers\Loki\LokiStream;
-use Dotswan\EagleEye\Capture\CaptureSuppression;
+use Illuminate\Http\Client\Response;
 use Dotswan\EagleEye\Drivers\Loki\LokiWriteException;
-use Dotswan\EagleEye\Drivers\Loki\BoundedResponse;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -70,7 +70,7 @@ final class PushWriter implements LokiWriterInterface
     {
         try {
             $deadline = BoundedResponse::deadline(2);
-            $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'readiness', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'readiness'))->get(mb_rtrim($this->endpoint, '/').'/ready'));
+            $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'readiness', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'readiness'))->get(mb_rtrim($this->endpoint, '/').'/ready'));
 
             return $response->ok() && str_contains(BoundedResponse::read($response, 'readiness', 4096, $deadline), 'ready');
         } catch (Throwable) {
@@ -118,7 +118,7 @@ final class PushWriter implements LokiWriterInterface
             }
 
             try {
-                $response = app(CaptureSuppression::class)->run(fn () => $request->post(mb_rtrim($this->endpoint, '/').'/loki/api/v1/push'));
+                $response = BoundedResponse::send(fn (): Response => $request->post(mb_rtrim($this->endpoint, '/').'/loki/api/v1/push'));
                 BoundedResponse::remainingSeconds($deadline, 'push');
             } catch (Throwable $throwable) {
                 if ($attempt >= count($backoffs)) {

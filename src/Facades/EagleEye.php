@@ -42,7 +42,7 @@ final class EagleEye extends Facade
 
         $driver = new MemoryDriver($maxEntries);
         $manager = $application->make(DriverManager::class);
-        $manager->extend('memory', static fn (): MemoryDriver => $driver);
+        $manager->extend('memory', fn (): MemoryDriver => $driver);
         $manager->forgetDrivers();
         $application->make(ConfigRepository::class)->set('eagle-eye.default', 'memory');
         $application->make(ConfigRepository::class)->set('eagle-eye.transport.buffer', 1);

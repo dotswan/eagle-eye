@@ -63,6 +63,7 @@ use Dotswan\EagleEye\Console\TraceCommand;
 use Dotswan\EagleEye\Console\TrailCommand;
 use Dotswan\EagleEye\Console\VerifyCommand;
 use Dotswan\EagleEye\Drivers\DatabaseDriver;
+use Dotswan\EagleEye\Drivers\DriverSettings;
 use Dotswan\EagleEye\Data\PayloadBudget;
 use Dotswan\EagleEye\Data\TraceContext;
 use Dotswan\EagleEye\Enums\RedactionMode;
@@ -574,30 +575,30 @@ final class EagleEyeServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->app->make(DriverManager::class)->extend('index', function (): IndexDriver {
-            $settings = $this->arraySetting(
-                $this->app->make(ConfigRepository::class)->get('eagle-eye.drivers', []),
+        $this->app->make(DriverManager::class)->extend('index', function (Application $app): IndexDriver {
+            $settings = DriverSettings::array(
+                $app->make(ConfigRepository::class)->get('eagle-eye.drivers', []),
                 'index',
             );
             $connection = $settings['connection'] ?? null;
 
             return new IndexDriver(
-                connection: $this->app->make('db')->connection(is_string($connection) && '' !== $connection ? $connection : null),
+                connection: $app->make('db')->connection(is_string($connection) && '' !== $connection ? $connection : null),
                 table: (string) ($settings['table'] ?? 'activity_log_index'),
-                erasure: $this->app->make(ErasureRegistry::class),
+                erasure: $app->make(ErasureRegistry::class),
             );
         });
     }
 
     private function registerMultiDriver(): void
     {
-        $this->app->make(DriverManager::class)->extend('multi', function (): MultiDriver {
-            $settings = $this->arraySetting(
-                $this->app->make(ConfigRepository::class)->get('eagle-eye.drivers', []),
+        $this->app->make(DriverManager::class)->extend('multi', function (Application $app): MultiDriver {
+            $settings = DriverSettings::array(
+                $app->make(ConfigRepository::class)->get('eagle-eye.drivers', []),
                 'multi',
             );
-            $onFailure = $this->arraySetting($settings, 'on_failure');
-            $drivers = $this->app->make(DriverManager::class);
+            $onFailure = DriverSettings::array($settings, 'on_failure');
+            $drivers = $app->make(DriverManager::class);
 
             $primaryName = (string) ($settings['primary'] ?? 'database');
             $acceleratorName = $settings['accelerator'] ?? null;
@@ -624,19 +625,19 @@ final class EagleEyeServiceProvider extends ServiceProvider
 
     private function registerLokiDriver(): void
     {
-        $this->app->make(DriverManager::class)->extend('loki', function (): LokiDriver {
-            $config = $this->app->make(ConfigRepository::class);
+        $this->app->make(DriverManager::class)->extend('loki', function (Application $app): LokiDriver {
+            $config = $app->make(ConfigRepository::class);
             $settings = $config->get('eagle-eye.drivers.loki', []);
             $settings = is_array($settings) ? $settings : [];
 
-            $write = $this->arraySetting($settings, 'write');
-            $read = $this->arraySetting($settings, 'read');
-            $labels = $this->arraySetting($settings, 'labels');
-            $writeAuth = $this->arraySetting($write, 'auth');
-            $readAuth = $this->arraySetting($read, 'auth');
-            $auth = null === $this->stringOrNull($readAuth, 'type') ? $writeAuth : $readAuth;
-            $retry = $this->arraySetting($write, 'retry');
-            $selector = $this->stringOrNull($read, 'selector');
+            $write = DriverSettings::array($settings, 'write');
+            $read = DriverSettings::array($settings, 'read');
+            $labels = DriverSettings::array($settings, 'labels');
+            $writeAuth = DriverSettings::array($write, 'auth');
+            $readAuth = DriverSettings::array($read, 'auth');
+            $auth = null === DriverSettings::stringOrNull($readAuth, 'type') ? $writeAuth : $readAuth;
+            $retry = DriverSettings::array($write, 'retry');
+            $selector = DriverSettings::stringOrNull($read, 'selector');
 
             $staticLabels = is_array($labels['static'] ?? null) ? $labels['static'] : [];
             $dynamic = is_array($labels['dynamic'] ?? null) ? array_values($labels['dynamic']) : ['env', 'channel', 'severity'];
@@ -649,7 +650,7 @@ final class EagleEyeServiceProvider extends ServiceProvider
             $writer = match ($path) {
                 'push' => new PushWriter(
                     endpoint: (string) ($write['endpoint'] ?? 'http://127.0.0.1:3100'),
-                    tenant: $this->stringOrNull($write, 'tenant'),
+                    tenant: DriverSettings::stringOrNull($write, 'tenant'),
                     auth: $writeAuth,
                     gzip: (bool) ($write['gzip'] ?? true),
                     backoffMs: $backoffs,
@@ -664,7 +665,7 @@ final class EagleEyeServiceProvider extends ServiceProvider
                 writer: $writer,
                 reader: new LokiClient(
                     endpoint: (string) ($read['endpoint'] ?? ($write['endpoint'] ?? 'http://127.0.0.1:3100')),
-                    tenant: $this->stringOrNull($read, 'tenant') ?? $this->stringOrNull($write, 'tenant'),
+                    tenant: DriverSettings::stringOrNull($read, 'tenant') ?? DriverSettings::stringOrNull($write, 'tenant'),
                     auth: $auth,
                     timeout: (int) ($read['timeout'] ?? 15),
                 ),
@@ -676,8 +677,8 @@ final class EagleEyeServiceProvider extends ServiceProvider
                 ),
                 staticLabels: $staticLabels,
                 defaultRangeDays: (int) ($read['default_range_days'] ?? 30),
-                erasure: $this->app->make(ErasureRegistry::class),
-                integrity: $this->app->make(IntegrityLedger::class),
+                erasure: $app->make(ErasureRegistry::class),
+                integrity: $app->make(IntegrityLedger::class),
             );
         });
 
@@ -687,7 +688,7 @@ final class EagleEyeServiceProvider extends ServiceProvider
             $labels = $config->get('eagle-eye.drivers.loki.labels', []);
 
             if (is_array($read)) {
-                $selector = $this->stringOrNull($read, 'selector');
+                $selector = DriverSettings::stringOrNull($read, 'selector');
 
                 if (null !== $selector) {
                     LokiQueryTranslator::assertSelector($selector);
@@ -708,41 +709,22 @@ final class EagleEyeServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * @param array<string, mixed> $settings
-     * @return array<string, mixed>
-     */
-    private function arraySetting(array $settings, string $key): array
-    {
-        $value = $settings[$key] ?? [];
-
-        return is_array($value) ? $value : [];
-    }
-
-    /** @param array<string, mixed> $settings */
-    private function stringOrNull(array $settings, string $key): ?string
-    {
-        $value = $settings[$key] ?? null;
-
-        return is_string($value) && '' !== $value ? $value : null;
-    }
-
     private function registerDatabaseDriver(): void
     {
         if (! $this->databaseAvailable()) {
             return;
         }
 
-        $this->app->make(DriverManager::class)->extend('database', function (): DatabaseDriver {
-            $settings = $this->app->make(ConfigRepository::class)->get('eagle-eye.drivers.database', []);
+        $this->app->make(DriverManager::class)->extend('database', function (Application $app): DatabaseDriver {
+            $settings = $app->make(ConfigRepository::class)->get('eagle-eye.drivers.database', []);
             $settings = is_array($settings) ? $settings : [];
             $connection = $settings['connection'] ?? null;
 
             return new DatabaseDriver(
-                connection: $this->app->make('db')->connection(is_string($connection) && '' !== $connection ? $connection : null),
+                connection: $app->make('db')->connection(is_string($connection) && '' !== $connection ? $connection : null),
                 table: (string) ($settings['table'] ?? 'activity_logs'),
-                erasure: $this->app->make(ErasureRegistry::class),
-                integrity: $this->app->make(IntegrityLedger::class),
+                erasure: $app->make(ErasureRegistry::class),
+                integrity: $app->make(IntegrityLedger::class),
             );
         });
     }

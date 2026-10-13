@@ -32,7 +32,7 @@ Eagle Eye records what happens in your application (HTTP requests, model changes
 ## Requirements
 
 - PHP 8.4 or 8.5 with `ext-mbstring`
-- Laravel 11 or 12
+- Laravel 12 or 13
 - `ext-curl` for the Loki driver's HTTP push and query API
 
 ## Installation

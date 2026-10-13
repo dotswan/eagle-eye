@@ -38,8 +38,8 @@ final class ActivityEntryResource extends JsonResource
             'severity'       => $entry->severity->value,
             'title'          => $entry->title,
             'summary'        => $entry->summary,
-            'actor'          => null === $entry->actor ? null : $entry->actor->toArray(),
-            'subject'        => null === $entry->subject ? null : $entry->subject->toArray(),
+            'actor'          => $entry->actor?->toArray(),
+            'subject'        => $entry->subject?->toArray(),
             'trace'          => [
                 'trace_id'       => $entry->trace->traceId,
                 'correlation_id' => $entry->trace->correlationId,
@@ -47,7 +47,7 @@ final class ActivityEntryResource extends JsonResource
                 'parent_span_id' => $entry->trace->parentSpanId,
             ],
             'tags'           => $entry->tags,
-            'request'        => null === $entry->request ? null : $entry->request->toArray(),
+            'request'        => $entry->request?->toArray(),
             'changes'        => $this->changes($entry),
             'payload'        => $entry->payload,
             'sealed'         => array_keys($entry->secrets),
@@ -56,7 +56,7 @@ final class ActivityEntryResource extends JsonResource
             'hostname'       => $entry->hostname,
             'memory_kb'      => $entry->memoryKb,
             'integrity_hash' => $entry->integrityHash,
-            'created_at'     => null === $entry->createdAt ? null : $entry->createdAt->format('Y-m-d\TH:i:s.u\Z'),
+            'created_at'     => $entry->createdAt?->format('Y-m-d\TH:i:s.u\Z'),
         ];
     }
 

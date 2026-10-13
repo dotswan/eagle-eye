@@ -31,6 +31,7 @@ use Dotswan\EagleEye\Integrity\CanonicalEntryHasher;
 use Dotswan\EagleEye\Drivers\ActivityLogSchema;
 use Illuminate\Database\SQLiteConnection;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Assert;
 
 final class AuditFlagPipe implements ActivityPipeInterface
 {
@@ -180,7 +181,7 @@ it('continues one persistent integrity chain after scoped worker state is replac
 
 it('serializes independent integrity workers across duplicate seals and segment rollover', function (): void {
     if (! function_exists('pcntl_fork')) {
-        $this->markTestSkipped('PCNTL is required for the process-boundary regression.');
+        Assert::markTestSkipped('PCNTL is required for the process-boundary regression.');
     }
 
     $database = tempnam(sys_get_temp_dir(), 'eagle-eye-integrity-');

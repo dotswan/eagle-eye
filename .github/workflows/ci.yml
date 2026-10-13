@@ -21,12 +21,12 @@ jobs:
             fail-fast: false
             matrix:
                 php: ['8.4', '8.5']
-                laravel: ['11.*', '12.*']
+                laravel: ['12.*', '13.*']
                 include:
-                    - laravel: '11.*'
-                      testbench: '^9.0'
                     - laravel: '12.*'
                       testbench: '^10.0'
+                    - laravel: '13.*'
+                      testbench: '^11.0'
         steps:
             - uses: actions/checkout@v4
 
@@ -64,8 +64,12 @@ jobs:
               run: composer test
 
     clean-room:
-        name: "Clean-room install"
+        name: "Clean-room install (Laravel ${{ matrix.laravel }})"
         runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                laravel: ['^12.0', '^13.0']
         steps:
             - uses: actions/checkout@v4
 
@@ -81,7 +85,7 @@ jobs:
                   rsync -a --exclude=.git --exclude=vendor "$GITHUB_WORKSPACE/" /tmp/eagle-eye/
 
             - name: Create fresh Laravel application
-              run: composer create-project laravel/laravel:^12.0 laravel --no-interaction --no-progress
+              run: composer create-project laravel/laravel:${{ matrix.laravel }} laravel --no-interaction --no-progress
 
             - name: Require package via path repository
               working-directory: laravel

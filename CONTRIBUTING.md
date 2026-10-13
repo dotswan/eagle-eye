@@ -14,7 +14,7 @@ Requirements: PHP 8.4 or 8.5 with `ext-mbstring` and `ext-curl`, and Composer 2.
 
 ## Quality gate
 
-Every pull request must pass the full gate, which CI runs on PHP 8.4/8.5 against Laravel 11 and 12:
+Every pull request must pass the full gate, which CI runs on PHP 8.4/8.5 against Laravel 12 and 13:
 
 ```bash
 composer check

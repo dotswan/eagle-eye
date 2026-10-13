@@ -119,13 +119,12 @@ trait BuildsSqlActivityQueries
         $builder->where(function (Builder $nested) use ($tags): void {
             foreach ($tags as $index => $tag) {
                 [$sql, $binding] = $this->tagContains($tag);
-                $method = 0 === $index ? 'whereRaw' : 'orWhereRaw';
-                $nested->{$method}($sql, [$binding]);
+                $nested->whereRaw($sql, [$binding], 0 === $index ? 'and' : 'or');
             }
         });
     }
 
-    /** @return array{0: string, 1: string} */
+    /** @return array{0: literal-string, 1: string} */
     protected function tagContains(string $tag): array
     {
         $encodedTag = json_encode($tag, JSON_THROW_ON_ERROR);
@@ -228,18 +227,25 @@ trait BuildsSqlActivityQueries
         return $rows;
     }
 
+    /** @return literal-string */
     protected function sqlGroupExpression(string $groupBy, string $interval): string
     {
         return match ($groupBy) {
-            'channel', 'action', 'severity', 'actor_type', 'subject_type', 'trace_id' => $groupBy,
-            'actor'                                                                   => $this->actorGroupExpression(),
-            'route'                                                                   => "COALESCE(route, 'unknown')",
-            'status_code'                                                             => $this->statusGroupExpression(),
-            'logged_at'                                                               => $this->dateGroupExpression($interval),
-            default                                                                   => throw new InvalidArgumentException("Unknown activity group key [{$groupBy}]."),
+            'channel'      => 'channel',
+            'action'       => 'action',
+            'severity'     => 'severity',
+            'actor_type'   => 'actor_type',
+            'subject_type' => 'subject_type',
+            'trace_id'     => 'trace_id',
+            'actor'        => $this->actorGroupExpression(),
+            'route'        => "COALESCE(route, 'unknown')",
+            'status_code'  => $this->statusGroupExpression(),
+            'logged_at'    => $this->dateGroupExpression($interval),
+            default        => throw new InvalidArgumentException("Unknown activity group key [{$groupBy}]."),
         };
     }
 
+    /** @return literal-string */
     protected function actorGroupExpression(): string
     {
         return match ($this->sqlConnection()->getDriverName()) {
@@ -262,6 +268,7 @@ trait BuildsSqlActivityQueries
             : $value;
     }
 
+    /** @return literal-string */
     protected function statusGroupExpression(): string
     {
         $cast = 'pgsql' === $this->sqlConnection()->getDriverName() ? 'text' : 'char';
@@ -269,6 +276,7 @@ trait BuildsSqlActivityQueries
         return "COALESCE(CAST(status_code AS {$cast}), '0')";
     }
 
+    /** @return literal-string */
     protected function dateGroupExpression(string $interval): string
     {
         return match ($this->sqlConnection()->getDriverName()) {
@@ -278,6 +286,7 @@ trait BuildsSqlActivityQueries
         };
     }
 
+    /** @return literal-string */
     protected function intervalFormat(string $interval, bool $percent): string
     {
         return match ($interval) {
@@ -356,8 +365,7 @@ trait BuildsSqlActivityQueries
     {
         $window = SeriesWindow::fromQuery($query, $stepSeconds);
         $this->assertSeriesGroupKey($groupBy);
-        $bucketExpression = $this->sqlSeriesBucketExpression($stepSeconds);
-        $select = $builder->selectRaw("{$bucketExpression} AS bucket_key");
+        $select = $builder->selectRaw($this->sqlSeriesBucketExpression().' AS bucket_key', [$stepSeconds, $stepSeconds]);
 
         if (null !== $groupBy) {
             $select->selectRaw($this->sqlGroupExpression($groupBy, 'day').' AS group_key')->groupBy('group_key');
@@ -392,12 +400,13 @@ trait BuildsSqlActivityQueries
         }
     }
 
-    protected function sqlSeriesBucketExpression(int $stepSeconds): string
+    /** @return literal-string */
+    protected function sqlSeriesBucketExpression(): string
     {
         return match ($this->sqlConnection()->getDriverName()) {
-            'mysql', 'mariadb' => "FLOOR(UNIX_TIMESTAMP(logged_at)/{$stepSeconds})*{$stepSeconds}",
-            'pgsql'            => "FLOOR(EXTRACT(EPOCH FROM logged_at)/{$stepSeconds})*{$stepSeconds}",
-            default            => "(CAST(strftime('%s', logged_at) AS INTEGER)/{$stepSeconds})*{$stepSeconds}",
+            'mysql', 'mariadb' => 'FLOOR(UNIX_TIMESTAMP(logged_at)/?)*?',
+            'pgsql'            => 'FLOOR(EXTRACT(EPOCH FROM logged_at)/?)*?',
+            default            => "(CAST(strftime('%s', logged_at) AS INTEGER)/?)*?",
         };
     }
 

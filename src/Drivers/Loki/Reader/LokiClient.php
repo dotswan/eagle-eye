@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dotswan\EagleEye\Drivers\Loki\Reader;
 
 use DateTimeImmutable;
-use Dotswan\EagleEye\Capture\CaptureSuppression;
 use Dotswan\EagleEye\Drivers\Loki\LokiWriteException;
 use Dotswan\EagleEye\Drivers\Loki\BoundedResponse;
 use Illuminate\Http\Client\PendingRequest;
@@ -44,7 +43,7 @@ final readonly class LokiClient
         ?int $deadline = null,
     ): array {
         $deadline ??= $this->deadline();
-        $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'query_range')->timeout(BoundedResponse::remainingSeconds($deadline, 'query_range'))->get($this->url('/loki/api/v1/query_range'), [
+        $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'query_range')->timeout(BoundedResponse::remainingSeconds($deadline, 'query_range'))->get($this->url('/loki/api/v1/query_range'), [
             'query'     => $logql,
             'limit'     => $limit,
             'start'     => $startNs,
@@ -69,7 +68,7 @@ final readonly class LokiClient
     public function instant(string $expression, string $atNs): array
     {
         $deadline = BoundedResponse::deadline($this->timeout);
-        $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'instant query')->timeout(BoundedResponse::remainingSeconds($deadline, 'instant query'))->get($this->url('/loki/api/v1/query'), [
+        $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'instant query')->timeout(BoundedResponse::remainingSeconds($deadline, 'instant query'))->get($this->url('/loki/api/v1/query'), [
             'query' => $expression,
             'time'  => $atNs,
         ]));
@@ -89,7 +88,7 @@ final readonly class LokiClient
     public function metricRange(string $expression, string $startNs, string $endNs, int $stepSeconds, ?int $deadline = null): array
     {
         $deadline ??= $this->deadline();
-        $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'metric query')->timeout(BoundedResponse::remainingSeconds($deadline, 'metric query'))->get($this->url('/loki/api/v1/query_range'), [
+        $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'metric query')->timeout(BoundedResponse::remainingSeconds($deadline, 'metric query'))->get($this->url('/loki/api/v1/query_range'), [
             'query' => $expression,
             'start' => $startNs,
             'end'   => $endNs,
@@ -110,7 +109,7 @@ final readonly class LokiClient
     {
         try {
             $deadline = BoundedResponse::deadline(3);
-            $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'readiness', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'readiness'))->get($this->url('/ready')));
+            $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'readiness', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'readiness'))->get($this->url('/ready')));
 
             return $response->ok() && str_contains(BoundedResponse::read($response, 'readiness', 4096, $deadline), 'ready');
         } catch (Throwable) {
@@ -142,7 +141,7 @@ final readonly class LokiClient
                 'start' => $start,
                 'end'   => $end,
             ], encoding_type: PHP_QUERY_RFC3986);
-            $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'delete', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'delete'))->post($this->url('/loki/api/v1/delete').'?'.$parameters));
+            $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'delete', 4096)->timeout(BoundedResponse::remainingSeconds($deadline, 'delete'))->post($this->url('/loki/api/v1/delete').'?'.$parameters));
 
             BoundedResponse::remainingSeconds($deadline, 'delete');
             $accepted = 204 === $response->status();
@@ -159,7 +158,7 @@ final readonly class LokiClient
     /** @return list<array<string, mixed>> */
     private function deleteRequests(int $deadline): array
     {
-        $response = app(CaptureSuppression::class)->run(fn () => $this->request($deadline, 'delete receipts')
+        $response = BoundedResponse::send(fn (): Response => $this->request($deadline, 'delete receipts')
             ->timeout(BoundedResponse::remainingSeconds($deadline, 'delete receipts'))
             ->get($this->url('/loki/api/v1/delete')));
         if (! $response->successful()) {

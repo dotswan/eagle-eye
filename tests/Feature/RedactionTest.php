@@ -54,7 +54,7 @@ it('rejects a mismatched detail identity returned by a query driver', function (
 
     $driver->shouldReceive('find')->once()->with($requestedId)->andReturn(DriverContractTests::entry(8011));
     $manager = app(DriverManager::class);
-    $manager->extend('wrong-detail', static fn (): ActivityLogDriverInterface => $driver);
+    $manager->extend('wrong-detail', fn (): ActivityLogDriverInterface => $driver);
     $manager->forgetDrivers();
     config()->set('eagle-eye.default', 'wrong-detail');
     app()->forgetInstance(ActivityRepositoryInterface::class);
@@ -170,7 +170,7 @@ it('returns no plaintext when the mandatory reveal audit is rejected', function 
 
     Gate::define('revealActivityLog', static fn ($viewer = null): bool => true);
     $manager = app(DriverManager::class);
-    $manager->extend('audit-failure', static fn (): AlwaysFailingDriver => new AlwaysFailingDriver());
+    $manager->extend('audit-failure', fn (): AlwaysFailingDriver => new AlwaysFailingDriver());
     $manager->forgetDrivers();
     config()->set('eagle-eye.default', 'audit-failure');
 

@@ -3,7 +3,7 @@
 ## Requirements
 
 - PHP 8.4 or 8.5 with `ext-mbstring`
-- Laravel 11 or 12
+- Laravel 12 or 13
 - `ext-curl` when you use the Loki driver's HTTP push or query API (Loki calls require cURL to enforce whole-operation deadlines)
 - A database supported by Laravel (SQLite, MySQL, PostgreSQL) for the `database` driver and for the privacy and integrity state used by every driver
 
