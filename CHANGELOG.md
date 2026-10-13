@@ -5,6 +5,12 @@ All notable changes to `dotswan/eagle-eye` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0-beta.2 - 2026-10-13
+
+### Fixed
+
+- Zero-code model capture no longer discards the buffered batch for models whose class name contains control characters (anonymous classes such as `new class extends Model`). The poisoned batch also silently dropped unrelated entries flushed with it (for example `auth.login`). Actor and subject identities are now sanitised before the erasure barrier digests them.
+
 ## 1.0.0-beta.1 - 2026-10-13
 
 Initial public beta. Supports Laravel 12 and 13; Laravel 11 is no longer supported.
