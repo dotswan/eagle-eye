@@ -8,6 +8,7 @@ use Dotswan\EagleEye\Drivers\DriverManager;
 use Dotswan\EagleEye\Attributes\ActivitySubject;
 use Dotswan\EagleEye\Attributes\DoNotLog;
 use Dotswan\EagleEye\Data\ActivityEntry;
+use Dotswan\EagleEye\Data\Subject;
 use Dotswan\EagleEye\Enums\ActivityChannel;
 use Dotswan\EagleEye\Facades\EagleEye;
 use Dotswan\EagleEye\Http\Middleware\CaptureHttpActivityMiddleware;
@@ -118,6 +119,30 @@ it('captures model writes with zero application code', function (): void {
             && ['old' => 'draft', 'new' => 'approved'] === ($entry->payload['changes']['status'] ?? null)
             && null === ($entry->payload['changes']['title']['new'] ?? null),
     );
+});
+
+it('captures anonymous model subclasses with control-free subject identities', function (): void {
+    $fake = EagleEye::fake();
+
+    $post = new class () extends CaptureTestPost {};
+    $post->fill(['title' => 'anonymous', 'status' => 'draft'])->save();
+
+    $entry = null;
+
+    foreach ($fake->recorded() as $candidate) {
+        if ('model.created' === $candidate->action) {
+            $entry = $candidate;
+        }
+    }
+
+    $subject = $entry?->subject;
+
+    if (! $subject instanceof Subject) {
+        throw new LogicException('Expected the captured model entry to carry a subject.');
+    }
+
+    expect($subject->className)->not->toBeNull()
+        ->and(preg_match('/[\x00-\x1F\x7F]/', $subject->type.$subject->id.$subject->className))->toBe(0);
 });
 
 it('captures raw storage values for cast attributes on both sides', function (): void {

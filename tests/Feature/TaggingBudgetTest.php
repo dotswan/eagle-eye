@@ -190,6 +190,20 @@ it('rejects oversized identities before normalization', function (): void {
     expect((new EnforceBudget(new PayloadBudget()))->handle($draft, static fn (ActivityDraft $entry): ActivityDraft => $entry))->toBeNull();
 });
 
+it('strips control characters from actor and subject identities', function (): void {
+    $draft = ActivityDraft::make('bounded');
+    $draft->actor = new Actor("user\0", "7\x01", 'Sara');
+    $draft->subject = new Subject("order\n", "9\x7F", 'Order', "App\\Models\\Order@anonymous\0/tmp/order.php:12$0");
+
+    $result = (new EnforceBudget(new PayloadBudget()))->handle($draft, static fn (ActivityDraft $entry): ActivityDraft => $entry);
+
+    expect($result?->actor?->type)->toBe('user')
+        ->and($result?->actor?->id)->toBe('7')
+        ->and($result?->subject?->type)->toBe('order')
+        ->and($result?->subject?->id)->toBe('9')
+        ->and($result?->subject?->className)->toBe('App\\Models\\Order@anonymous/tmp/order.php:12$0');
+});
+
 it('rejects an envelope that remains oversized after safe fallback', function (): void {
     $draft = ActivityDraft::make('bounded')->withTrace(TraceContext::create());
     $draft->integrityHash = str_repeat('x', 132000);

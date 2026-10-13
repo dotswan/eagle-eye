@@ -25,6 +25,8 @@ final readonly class EnforceBudget implements ActivityPipeInterface
 
     public function handle(ActivityDraft $draft, Closure $next): ?ActivityDraft
     {
+        $this->sanitizeIdentities($draft);
+
         if (! $this->identitiesFit($draft)) {
             return null;
         }
@@ -58,6 +60,40 @@ final readonly class EnforceBudget implements ActivityPipeInterface
         }
 
         return $next($draft);
+    }
+
+    /**
+     * Stored identities are digested for erasure barriers, which require bounded
+     * names without control characters. PHP exposes anonymous class names with a
+     * NUL separator, so those names are stripped instead of poisoning the entry.
+     */
+    private function sanitizeIdentities(ActivityDraft $draft): void
+    {
+        if ($draft->actor instanceof Actor) {
+            $draft->actor = new Actor(
+                $this->identityString($draft->actor->type),
+                null === $draft->actor->id ? null : $this->identityString($draft->actor->id),
+                $draft->actor->label,
+                $draft->actor->url,
+            );
+        }
+
+        if ($draft->subject instanceof Subject) {
+            $draft->subject = new Subject(
+                $this->identityString($draft->subject->type),
+                $this->identityString($draft->subject->id),
+                $draft->subject->label,
+                null === $draft->subject->className ? null : $this->identityString($draft->subject->className),
+                $draft->subject->url,
+            );
+        }
+    }
+
+    private function identityString(string $value): string
+    {
+        $sanitized = preg_replace('/[\x00-\x1F\x7F]/', '', $value);
+
+        return is_string($sanitized) ? $sanitized : $value;
     }
 
     private function identitiesFit(ActivityDraft $draft): bool
