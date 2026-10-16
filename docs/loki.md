@@ -72,6 +72,23 @@ bodies). Compressed responses are rejected because their decoded size cannot be
 bounded in advance. HTTP calls require Laravel's default cURL-backed client; a custom
 or unknown Guzzle handler is rejected before any I/O.
 
+### Read failures
+
+A read failure raises `LokiWriteException` naming the operation, the HTTP status, and
+Loki's own reason, so the cause is visible without opening a Loki log:
+
+| Loki answer | Reported message |
+|---|---|
+| `401 no org id` | `Loki query_range failed with HTTP 401: no org id` — the tenant header is missing; set `LOKI_READ_TENANT_ID` whenever Loki runs with `auth_enabled: true` |
+| `429 too many outstanding requests` | `Loki query_range failed with HTTP 429: too many outstanding requests` — the per-tenant query queue (`frontend.max_outstanding_per_tenant`, `query_scheduler.max_outstanding_requests_per_tenant`) is saturated |
+| `400 parse error at line 1, col 6: …` | the LogQL parse error is quoted back verbatim |
+| a non-JSON body with a 2xx status | `… returned HTTP 200 with a body that is not valid JSON: …` |
+| a JSON payload with `"status":"error"` | `… is not a success payload: <error field>` |
+
+Loki returns failures as short plain-text bodies. The body is collapsed onto one line
+and truncated to 200 characters before it is reported, and the original `JsonException`
+stays attached as the previous exception when a body cannot be decoded.
+
 ## Collector mode: stdout write, Loki API read
 
 Write to stdout and give the driver the stream selector your collector assigns:

@@ -10,6 +10,7 @@ use Dotswan\EagleEye\Drivers\Loki\BoundedResponse;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use JsonException;
 use Throwable;
 
 /**
@@ -210,7 +211,9 @@ final readonly class LokiClient
     private function data(mixed $json, string $operation): array
     {
         if (! is_array($json) || 'success' !== ($json['status'] ?? null) || ! isset($json['data']) || ! is_array($json['data'])) {
-            throw new LokiWriteException("Loki {$operation} response is not a success payload.");
+            $reason = is_array($json) && is_string($json['error'] ?? null) ? ': '.$json['error'] : '.';
+
+            throw new LokiWriteException("Loki {$operation} response is not a success payload{$reason}");
         }
 
         return $json['data'];
@@ -221,13 +224,54 @@ final readonly class LokiClient
     {
         $body = BoundedResponse::read($response, $operation, deadline: $deadline);
 
-        $decoded = json_decode($body, true, 32, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+        // Loki answers failures with a short plain-text body ("no org id",
+        // "too many outstanding requests", a LogQL parse error). Decoding it as
+        // JSON raised a bare JsonException whose message was simply "Syntax
+        // error", which hid the real reason from operators and from the UI.
+        if (! $response->successful()) {
+            throw new LokiWriteException(sprintf(
+                'Loki %s failed with HTTP %d: %s',
+                $operation,
+                $response->status(),
+                $this->bodyPreview($body),
+            ));
+        }
+
+        try {
+            $decoded = json_decode($body, true, 32, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new LokiWriteException(
+                sprintf(
+                    'Loki %s returned HTTP %d with a body that is not valid JSON: %s',
+                    $operation,
+                    $response->status(),
+                    $this->bodyPreview($body),
+                ),
+                0,
+                $exception,
+            );
+        }
 
         if (! is_array($decoded)) {
             throw new LokiWriteException("Loki {$operation} response is not a JSON object.");
         }
 
         return $decoded;
+    }
+
+    /**
+     * Flattens and bounds an error body so the reason survives in the message
+     * without pasting a full HTML error page into the logs.
+     */
+    private function bodyPreview(string $body): string
+    {
+        $collapsed = mb_trim((string) preg_replace('/\s+/u', ' ', $body));
+
+        if ('' === $collapsed) {
+            return '(empty body)';
+        }
+
+        return mb_strlen($collapsed) > 200 ? mb_substr($collapsed, 0, 200).'…' : $collapsed;
     }
 
     private function url(string $path): string

@@ -5,6 +5,12 @@ All notable changes to `dotswan/eagle-eye` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Loki read failures no longer surface as a bare `JsonException: Syntax error`. A non-2xx response was decoded as JSON without its status ever being checked, so Loki's plain-text error bodies (`no org id` for a missing tenant header, `too many outstanding requests` when the per-tenant query queue is full, a LogQL parse error) were all replaced by an unreadable `Syntax error`, and a JSON payload carrying an `error` field reported only a generic message. Read failures now name the operation, the HTTP status, and Loki's own reason, which is what lets the Filament explorer explain an empty pane instead of appearing broken.
+
 ## 1.0.0-beta.2 - 2026-10-13
 
 ### Fixed
